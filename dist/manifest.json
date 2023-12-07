@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Get Access Token",
+  "description": "Get Access Token",
+  "version": "1.0",
+  "icons": {
+    "16": "icon.png"
+  },
+  "action": {
+    "default_title": "Click me"
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "identity",
+    "cookies",
+    "webNavigation",
+    "activeTab",
+    "alarms"
+  ],
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "contentScript.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; script-src 'self' https://example.com"
+  },
+  "sandbox": {
+    "pages": [
+      "page1.html",
+      "directory/page2.html"
+    ]
+  },
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ]
+}
