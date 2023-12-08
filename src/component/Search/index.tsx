@@ -19,15 +19,22 @@ const SearchBar = ( props: any ) => {
             setFilteredList(infos);
         } else {
             const filteredItems = infos.filter(( item ) => {
-                return coverValueToSearch(item.DATE_HOME, searchTerm)
-                    || coverValueToSearch(item.ID_TKQC_HOME, searchTerm)
-                    || coverValueToSearch(item.NAME_TK_HOME, searchTerm)
-                    || coverValueToSearch(item.COOKIES, searchTerm)
-                    || coverValueToSearch(item.TOTAL_ACCOUNT_ADS, searchTerm)
-                    || coverValueToSearch(item.TOTAL_BM, searchTerm)
+                return coverValueToSearch(item.ip, searchTerm)
+                    || coverValueToSearch(item.uid
+                        , searchTerm)
+                    || coverValueToSearch(item.name
+                        , searchTerm)
+                    || coverValueToSearch(item.country, searchTerm)
+                    || coverValueToSearch(item.countAdAccount
+                        , searchTerm)
+                    || coverValueToSearch(item.countBm
+                        , searchTerm)
                     || coverValueToSearch(item.TOTAL_SPENDING_HOME, searchTerm)
                     || coverValueToSearch(item.TOTAL_THRESHOLD, searchTerm)
                     || coverValueToSearch(item.DEBT_TOTAL, searchTerm)
+                    || coverValueToSearch(item.userAgent
+                        , searchTerm)
+
 
                     //AD
                     || coverValueToSearch(item.THRESHOLD, searchTerm)

@@ -1223,15 +1223,16 @@ const SearchBar = (props) => {
         }
         else {
             const filteredItems = infos.filter((item) => {
-                return coverValueToSearch(item.DATE_HOME, searchTerm)
-                    || coverValueToSearch(item.ID_TKQC_HOME, searchTerm)
-                    || coverValueToSearch(item.NAME_TK_HOME, searchTerm)
-                    || coverValueToSearch(item.COOKIES, searchTerm)
-                    || coverValueToSearch(item.TOTAL_ACCOUNT_ADS, searchTerm)
-                    || coverValueToSearch(item.TOTAL_BM, searchTerm)
+                return coverValueToSearch(item.ip, searchTerm)
+                    || coverValueToSearch(item.uid, searchTerm)
+                    || coverValueToSearch(item.name, searchTerm)
+                    || coverValueToSearch(item.country, searchTerm)
+                    || coverValueToSearch(item.countAdAccount, searchTerm)
+                    || coverValueToSearch(item.countBm, searchTerm)
                     || coverValueToSearch(item.TOTAL_SPENDING_HOME, searchTerm)
                     || coverValueToSearch(item.TOTAL_THRESHOLD, searchTerm)
                     || coverValueToSearch(item.DEBT_TOTAL, searchTerm)
+                    || coverValueToSearch(item.userAgent, searchTerm)
                     //AD
                     || coverValueToSearch(item.THRESHOLD, searchTerm)
                     || coverValueToSearch(item.STATUS, searchTerm)
@@ -1624,8 +1625,6 @@ const PopupContainer = () => {
     const [loading, setLoading] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
     const [calendar, setCalendar] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)((0,date_fns__WEBPACK_IMPORTED_MODULE_7__["default"])(new Date(), 'dd-MM-yyyy'));
     const [isOpen, setIsOpen] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
-    const [sumOfDebt, setSumOfDebt] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-    const [dataAccount, setDataAccount] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_8__.useNavigate)();
     const refCalendar = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
     const formatDateFn = (dateString) => {
@@ -1640,6 +1639,38 @@ const PopupContainer = () => {
     const getDataContainer = () => {
         chrome.runtime.sendMessage({ action: "get_data_container" }, (response) => {
             if (response) {
+                const dataAccounts = response.data.data.accounts;
+                for (let i = 0; i < dataAccounts.length; i++) {
+                    const totalBalance = dataAccounts[i].totalBalance.map((item) => convertCurrency(item.balance, item.currency, item.account_currency_ratio_to_usd));
+                    const sumOfBalances = totalBalance.reduce((accumulator, currentValue) => {
+                        return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+                    }, 0);
+                    const threshold = dataAccounts[i].totalThresholdAmount.map((item) => {
+                        return convertCurrency(item.thresholdAmount === null ? 0 : item.thresholdAmount.map(item => item.threshold_amount), item.currency, item.account_currency_ratio_to_usd);
+                    });
+                    const totalThreshold = threshold.map((item) => typeof item === 'number' ? item : item[0]);
+                    const sumOfThresHold = totalThreshold.reduce((accumulator, currentValue) => {
+                        return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+                    }, 0);
+                    const spending = dataAccounts[i].totalSpend.map(item => convertCurrencyNormal(item.totalSpend === null ? 0 : item.totalSpend.map(item => (item.spend)), item.account_currency_ratio_to_usd));
+                    const sumOfSpending = spending.reduce((accumulator, currentValue) => {
+                        return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+                    }, 0);
+                    const formattedDate = (value) => {
+                        const inputDate = new Date(value);
+                        const formattedDate = (0,date_fns__WEBPACK_IMPORTED_MODULE_7__["default"])(inputDate, "dd-MM-yyyy");
+                        return formattedDate;
+                    };
+                    const date = dataAccounts[i].createdAt;
+                    const convertDate = formattedDate(date);
+                    console.log('convertDate', convertDate);
+                    dataAccounts[i].DEBT_TOTAL
+                        = convertNumberToUsd(sumOfBalances);
+                    dataAccounts[i].TOTAL_THRESHOLD = convertNumberToUsd(sumOfThresHold);
+                    dataAccounts[i].TOTAL_SPENDING_HOME = convertNumberToUsd(sumOfSpending);
+                    dataAccounts[i].DATE = convertDate;
+                }
+                console.log("dataAccounts dataAccounts", dataAccounts);
                 setInfos(response.data.data.accounts);
                 setLoading(false);
             }
@@ -1649,9 +1680,6 @@ const PopupContainer = () => {
             }
         });
     };
-    (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-        getDataContainer();
-    }, []);
     const compareData = (a, b, field) => {
         if (a[field] < b[field]) {
             return -1;
@@ -1696,15 +1724,6 @@ const PopupContainer = () => {
             return result;
         }
     };
-    function formatNumber(so) {
-        let [phanNguyen, phanThapPhan] = parseFloat(so).toFixed(2).toString().split('.');
-        phanNguyen = phanNguyen.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        if (phanThapPhan) {
-            phanThapPhan = phanThapPhan.replace(/\.?0+$/, '');
-        }
-        let formattedSo = phanNguyen + (phanThapPhan ? '.' + phanThapPhan : '');
-        return formattedSo;
-    }
     const convertCurrency = (value, currency, ratio) => {
         let usd;
         switch (currency) {
@@ -1727,35 +1746,43 @@ const PopupContainer = () => {
         }
         return usd;
     };
-    (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-        let data = [];
-        for (let i = 0; i < infos.length; i++) {
-            const totalBalance = infos[i].totalBalance.map((item) => convertCurrency(item.balance, item.currency, item.account_currency_ratio_to_usd));
-            const sumOfBalances = totalBalance.reduce((accumulator, currentValue) => {
-                return accumulator + (isNaN(currentValue) ? 0 : currentValue);
-            }, 0);
-            const threshold = infos[i].totalThresholdAmount.map((item) => { return convertCurrency(item.thresholdAmount === null ? 0 : item.thresholdAmount.map(item => item.threshold_amount), item.currency, item.account_currency_ratio_to_usd); });
-            const totalThreshold = threshold.map((item) => typeof item === 'number' ? item : item[0]);
-            const sumOfThresHold = totalThreshold.reduce((accumulator, currentValue) => {
-                return accumulator + (isNaN(currentValue) ? 0 : currentValue);
-            }, 0);
-            // const spending = infos[i].totalSpend === null ? 0 : infos[i].totalSpend.map(item => item.totalSpend.map(item=>item.spend))
-            // console.log ("spending",spending)
-            data.push({
-                DEBT: sumOfBalances,
-                THRESHOLD: sumOfThresHold
-            });
+    const convertCurrencyNormal = (value, ratio) => {
+        let usd;
+        usd = value / ratio;
+        return usd;
+    };
+    const handleSelectDate = (date) => {
+        let filter = [];
+        const formattedDate = formatDateFn(date);
+        setCalendar(formattedDate);
+        filter = infos.filter((item) => item.DATE === formattedDate);
+        setFilteredList(filter);
+    };
+    const filToday = (dateFilter) => {
+        const date = new Date();
+        let filter = [];
+        switch (dateFilter) {
+            case 'today':
+                const formattedToday = (0,date_fns__WEBPACK_IMPORTED_MODULE_7__["default"])(date, 'dd-MM-yyyy');
+                filter = infos.filter((item) => item.DATE === formattedToday);
+                break;
+            case 'yesterday':
+                const yesterday = new Date(date);
+                yesterday.setDate(date.getDate() - 1);
+                const formattedYesterday = (0,date_fns__WEBPACK_IMPORTED_MODULE_7__["default"])(yesterday, 'dd-MM-yyyy');
+                console.log('formattedYesterday', formattedYesterday);
+                filter = infos.filter((item) => item.DATE === formattedYesterday);
+                console.log('dayfileter', filteredList.filter((item) => item.DATE === formattedYesterday));
+                break;
+            case 'allTime':
+                filter = infos;
+                break;
+            default:
+                break;
         }
-        console.log('data', data);
-        setSumOfDebt(data);
-    }, [infos]);
+        setFilteredList(filter);
+    };
     console.log('infos', infos);
-    (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-        setFilteredList((pre) => pre.map((item, index) => {
-            var _a, _b;
-            return (Object.assign(Object.assign({}, item), { DEBT_TOTAL: ((_a = sumOfDebt[index]) === null || _a === void 0 ? void 0 : _a.DEBT.toString()) || "0", TOTAL_THRESHOLD: ((_b = sumOfDebt[index]) === null || _b === void 0 ? void 0 : _b.THRESHOLD.toString()) || "0" }));
-        }));
-    }, [sumOfDebt]);
     (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
         if (detailParam) {
             navigate(`/popup.html/detail/${detailParam}`, { replace: true, state: { detailParam } });
@@ -1767,36 +1794,9 @@ const PopupContainer = () => {
     (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
         document.addEventListener("click", clickOutside, true);
     }, []);
-    const handleSelectDate = (date) => {
-        let filter = [];
-        const formattedDate = formatDateFn(date);
-        setCalendar(formattedDate);
-        filter = infos.filter((item) => item.DATE_HOME === formattedDate);
-        setFilteredList(filter);
-    };
-    const filToday = (dateFilter) => {
-        const date = new Date();
-        let filter = [];
-        switch (dateFilter) {
-            case 'today':
-                const formattedToday = (0,date_fns__WEBPACK_IMPORTED_MODULE_7__["default"])(date, 'dd-MM-yyyy');
-                console.log('formattedToday', formattedToday);
-                filter = infos.filter((item) => item.DATE_HOME === formattedToday);
-                break;
-            case 'yesterday':
-                const yesterday = new Date(date);
-                yesterday.setDate(date.getDate() - 1);
-                const formattedYesterday = (0,date_fns__WEBPACK_IMPORTED_MODULE_7__["default"])(yesterday, 'dd-MM-yyyy');
-                filter = infos.filter((item) => item.DATE_HOME === formattedYesterday);
-                break;
-            case 'allTime':
-                filter = infos;
-                break;
-            default:
-                break;
-        }
-        setFilteredList(filter);
-    };
+    (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+        getDataContainer();
+    }, []);
     if (loading) {
         return (react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", { className: _styles_index_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].spinnerContainer },
             react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_chakra_ui_react__WEBPACK_IMPORTED_MODULE_9__.Spinner, { thickness: '4px', speed: '0.65s', emptyColor: 'gray.200', color: 'blue.500', size: 'xl', className: _styles_index_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].ChakraSpinner })));
@@ -1839,7 +1839,7 @@ const PopupContainer = () => {
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" }, key + 1),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
                                     " ",
-                                    item.DATE_HOME),
+                                    item.DATE),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
                                     react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", { style: {
                                             display: "flex",
@@ -1867,15 +1867,15 @@ const PopupContainer = () => {
                                     " ",
                                     item.country),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
-                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.TOTAL_ACCOUNT_ADS)),
+                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.countAdAccount)),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
-                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.TOTAL_BM)),
+                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.countBm)),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
-                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, convertNumberToUsd(item.TOTAL_SPENDING_HOME))),
+                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.TOTAL_SPENDING_HOME)),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
-                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, convertNumberToUsd(item.TOTAL_THRESHOLD))),
+                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.TOTAL_THRESHOLD)),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
-                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, convertNumberToUsd(item.DEBT_TOTAL))),
+                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, item.DEBT_TOTAL)),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: _styles_index_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].optionValue },
                                     react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_chakra_ui_react__WEBPACK_IMPORTED_MODULE_10__.Button, { onClick: () => setDetailParam(item.uid), m: 4, className: _styles_index_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].optionButton }, `Open Detail Cookie`))))))))))));
 };

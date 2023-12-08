@@ -1439,7 +1439,7 @@ const PopupBill = () => {
   \********************************************/
 /***/ (() => {
 
-throw new Error("Module parse failed: Unexpected token (136:116)\nFile was processed with these loaders:\n * ./node_modules/ts-loader/index.js\nYou may need an additional loader to handle the result of these loaders.\n|                 return accumulator + (isNaN(currentValue) ? 0 : currentValue);\n|             }, 0);\n>             const spending = infos[i].totalSpend === null ? 0 : infos[i].totalSpend.map(item => item.totalSpend.map.(item => item.spend));\n|             console.log(\"spending\", spending);\n|             data.push({");
+throw new Error("Module parse failed: Unexpected token (138:125)\nFile was processed with these loaders:\n * ./node_modules/ts-loader/index.js\nYou may need an additional loader to handle the result of these loaders.\n|                 return accumulator + (isNaN(currentValue) ? 0 : currentValue);\n|             }, 0);\n>             const spending = infos[i].totalSpend.map(item => item.totalSpend === null ? 0 : item.totalSpend.map(item => item.));\n|             console.log(\"spending\", spending);\n|             data.push({");
 
 /***/ }),
 

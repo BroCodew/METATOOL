@@ -5,7 +5,7 @@ import styles from "./styles/index.module.scss";
 import {Button, Checkbox, Input, Spinner, Stack} from "@chakra-ui/react";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 import SearchBar from "../../component/Search";
-import {format} from "date-fns";
+import {addDays, format, parseISO} from "date-fns";
 import {Calendar} from "react-date-range";
 import 'react-date-range/dist/styles.css'; // main style file
 import 'react-date-range/dist/theme/default.css';
@@ -21,9 +21,6 @@ const PopupContainer = () => {
     const [loading, setLoading] = useState(true);
     const [calendar, setCalendar] = useState(format(new Date(), 'dd-MM-yyyy'));
     const [isOpen, setIsOpen] = useState(false);
-    const [sumOfDebt,setSumOfDebt] = useState([]);
-    const [dataAccount, setDataAccount] = useState([]);
-
     const navigate = useNavigate();
     const refCalendar = useRef(null);
 
@@ -38,11 +35,43 @@ const PopupContainer = () => {
         }
     }
 
-
     const getDataContainer = () => {
         chrome.runtime.sendMessage({ action : "get_data_container" }, ( response ) => {
             if (response) {
-                setInfos(response.data.data.accounts)
+                const dataAccounts = response.data.data.accounts;
+                for (let i = 0; i < dataAccounts.length; i++) {
+                    const totalBalance = dataAccounts[i].totalBalance.map(( item ) => convertCurrency(item.balance, item.currency, item.account_currency_ratio_to_usd));
+                    const sumOfBalances = totalBalance.reduce(( accumulator, currentValue ) => {
+                        return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+                    }, 0);
+                    const threshold = dataAccounts[i].totalThresholdAmount.map(( item ) => {
+                        return convertCurrency(item.thresholdAmount === null ? 0 : item.thresholdAmount.map(item =>
+                            item.threshold_amount), item.currency, item.account_currency_ratio_to_usd)
+                    })
+                    const totalThreshold = threshold.map(( item ) => typeof item === 'number' ? item : item[0]);
+                    const sumOfThresHold = totalThreshold.reduce(( accumulator, currentValue ) => {
+                        return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+                    }, 0);
+                    const spending = dataAccounts[i].totalSpend.map(item => convertCurrencyNormal(item.totalSpend === null ? 0 : item.totalSpend.map(item => (item.spend)), item.account_currency_ratio_to_usd))
+                    const sumOfSpending = spending.reduce(( accumulator, currentValue ) => {
+                        return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+                    }, 0);
+                    const formattedDate = ( value ) => {
+                        const inputDate = new Date(value);
+                        const formattedDate = format(inputDate, "dd-MM-yyyy");
+                        return formattedDate;
+                    }
+                    const date = dataAccounts[i].createdAt;
+                    const convertDate = formattedDate(date);
+                    console.log('convertDate', convertDate);
+                    dataAccounts[i].DEBT_TOTAL
+                        = convertNumberToUsd(sumOfBalances);
+                    dataAccounts[i].TOTAL_THRESHOLD = convertNumberToUsd(sumOfThresHold);
+                    dataAccounts[i].TOTAL_SPENDING_HOME = convertNumberToUsd(sumOfSpending);
+                    dataAccounts[i].DATE = convertDate;
+                }
+                console.log("dataAccounts dataAccounts", dataAccounts)
+                setInfos(response.data.data.accounts);
                 setLoading(false)
             } else {
                 console.error(response.error);
@@ -50,11 +79,6 @@ const PopupContainer = () => {
             }
         })
     }
-
-    useEffect(() => {
-        getDataContainer();
-    }, []);
-
 
     const compareData = ( a, b, field ) => {
         if (a[field] < b[field]) {
@@ -94,27 +118,18 @@ const PopupContainer = () => {
     const handleCopyCookie = ( index ) => {
     };
 
-    const covertCookies = (cookies) => {
+    const covertCookies = ( cookies ) => {
         const jsonArray = JSON.parse(cookies);
-        if(jsonArray && jsonArray.length > 0) {
-            const result = jsonArray.map((item) => `${item.name}=${item.value}`).join("; ");
+        if (jsonArray && jsonArray.length > 0) {
+            const result = jsonArray.map(( item ) => `${item.name}=${item.value}`).join("; ");
             return result;
         }
     }
 
-    function formatNumber(so) {
-        let [phanNguyen, phanThapPhan] = parseFloat(so).toFixed(2).toString().split('.');
-        phanNguyen = phanNguyen.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        if (phanThapPhan) {
-            phanThapPhan = phanThapPhan.replace(/\.?0+$/, '');
-        }
-        let formattedSo = phanNguyen + (phanThapPhan ? '.' + phanThapPhan : '');
-        return formattedSo;
-    }
 
-    const convertCurrency = (value,currency,ratio) => {
+    const convertCurrency = ( value, currency, ratio ) => {
         let usd;
-        switch(currency) {
+        switch (currency) {
             case 'CLP':
             case 'COP':
             case 'CRC':
@@ -126,64 +141,58 @@ const PopupContainer = () => {
             case 'PYG':
             case 'TWD':
             case 'VND':
-                usd =value/ratio;
+                usd = value / ratio;
                 break;
             default:
-                usd = value/100/ratio;
+                usd = value / 100 / ratio;
                 break;
         }
         return usd;
     }
 
-
-useEffect(()=>{
-    let data = []
-    for (let i = 0; i < infos.length; i++){
-        const totalBalance = infos[i].totalBalance.map((item) => convertCurrency(item.balance,item.currency,item.account_currency_ratio_to_usd));
-        const sumOfBalances = totalBalance.reduce((accumulator, currentValue) => {
-            return accumulator + (isNaN(currentValue) ? 0 : currentValue);
-        }, 0);
-
-        const threshold = infos[i].totalThresholdAmount.map((item) =>{return convertCurrency(item.thresholdAmount === null ? 0 : item.thresholdAmount.map(item => item.threshold_amount),item.currency,item.account_currency_ratio_to_usd)})
-        const totalThreshold = threshold.map((item) => typeof item === 'number' ? item : item[0]);
-        const sumOfThresHold = totalThreshold.reduce((accumulator, currentValue) => {
-            return accumulator + (isNaN(currentValue) ? 0 : currentValue);
-        }, 0);
-
-        // const spending = infos[i].totalSpend === null ? 0 : infos[i].totalSpend.map(item => item.totalSpend.map(item=>item.spend))
-        // console.log ("spending",spending)
-
-        data.push({
-           DEBT: sumOfBalances,
-            THRESHOLD: sumOfThresHold
-        })
-
-
+    const convertCurrencyNormal = ( value, ratio ) => {
+        let usd;
+        usd = value / ratio;
+        return usd;
     }
-    console.log ('data', data)
-    setSumOfDebt(data);
 
 
-},[infos])
-    console.log ('infos', infos)
-    useEffect(() => {
-        setFilteredList((pre) =>
-            pre.map((item, index) => ({
-                ...item,
-                DEBT_TOTAL: sumOfDebt[index]?.DEBT.toString() || "0",
-                TOTAL_THRESHOLD:sumOfDebt[index]?.THRESHOLD.toString() || "0",
-            }))
-        );
-    }, [sumOfDebt]);
-
-
-
-
-
+    const handleSelectDate = ( date ) => {
+        let filter = [];
+        const formattedDate = formatDateFn(date);
+        setCalendar(formattedDate);
+        filter = infos.filter(( item ) => item.DATE === formattedDate);
+        setFilteredList(filter);
+    }
+    const filToday = ( dateFilter ) => {
+        const date = new Date();
+        let filter = [];
+        switch (dateFilter) {
+            case 'today':
+                const formattedToday = format(date, 'dd-MM-yyyy');
+                filter = infos.filter(( item ) => item.DATE === formattedToday);
+                break;
+            case 'yesterday':
+                const yesterday = new Date(date);
+                yesterday.setDate(date.getDate() - 1);
+                const formattedYesterday = format(yesterday, 'dd-MM-yyyy');
+                console.log('formattedYesterday', formattedYesterday)
+                filter = infos.filter(( item ) => item.DATE === formattedYesterday);
+                console.log('dayfileter', filteredList.filter(( item ) => item.DATE === formattedYesterday))
+                break;
+            case 'allTime':
+                filter = infos;
+                break;
+            default:
+                break;
+        }
+        setFilteredList(filter);
+    };
+    console.log('infos', infos)
 
     useEffect(() => {
         if (detailParam) {
-            navigate(`/popup.html/detail/${detailParam}`, { replace: true, state: {detailParam} });
+            navigate(`/popup.html/detail/${detailParam}`, { replace : true, state : { detailParam } });
         }
     }, [detailParam]);
 
@@ -196,36 +205,10 @@ useEffect(()=>{
         document.addEventListener("click", clickOutside, true);
     }, []);
 
-    const handleSelectDate = ( date ) => {
-        let filter = [];
-        const formattedDate = formatDateFn(date);
-        setCalendar(formattedDate);
-        filter = infos.filter(( item ) => item.DATE_HOME === formattedDate);
-        setFilteredList(filter);
-    }
-    const filToday = ( dateFilter ) => {
-        const date = new Date();
-        let filter = [];
-        switch (dateFilter) {
-            case 'today':
-                const formattedToday = format(date, 'dd-MM-yyyy');
-                console.log('formattedToday', formattedToday)
-                filter = infos.filter(( item ) => item.DATE_HOME === formattedToday);
-                break;
-            case 'yesterday':
-                const yesterday = new Date(date);
-                yesterday.setDate(date.getDate() - 1);
-                const formattedYesterday = format(yesterday, 'dd-MM-yyyy');
-                filter = infos.filter(( item ) => item.DATE_HOME === formattedYesterday);
-                break;
-            case 'allTime':
-                filter = infos;
-                break;
-            default:
-                break;
-        }
-        setFilteredList(filter);
-    };
+
+    useEffect(() => {
+        getDataContainer();
+    }, []);
 
     if (loading) {
         return (
@@ -332,7 +315,7 @@ useEffect(()=>{
                                 <tr className="trInfo" key={uuidv4()}
                                     style={{ backgroundColor : copied[key] ? "red" : "transparent" }}>
                                     <td className="tdInfo">{key + 1}</td>
-                                    <td className="tdInfo"> {item.DATE_HOME}</td>
+                                    <td className="tdInfo"> {item.DATE}</td>
                                     <td className="tdInfo">
                                         <div style={{
                                             display : "flex",
@@ -367,32 +350,34 @@ useEffect(()=>{
                                         style={{ textAlign : "center", overflow : "hidden" }}> {item.uid}</td>
                                     <td className="tdInfo"> {item.name}</td>
                                     <td className="tdInfo">
-                                             {item.userAgent}
+                                        {item.userAgent}
                                     </td>
                                     <td className="tdInfo"> {item.ip}</td>
                                     <td className="tdInfo"> {item.country}</td>
-                                    <td className="tdInfo" >
-                                        <span className="r">{item.TOTAL_ACCOUNT_ADS}</span>
+                                    <td className="tdInfo">
+                                        <span className="r">{item.countAdAccount}</span>
                                     </td>
                                     <td className="tdInfo"
                                     >
-                                        <span className="r">{item.TOTAL_BM}</span>
+                                        <span className="r">{item.countBm}</span>
                                     </td>
                                     <td className="tdInfo"
                                     >
-                                        <span className="r">{convertNumberToUsd(item.TOTAL_SPENDING_HOME)}</span>
+                                        <span className="r">{item.TOTAL_SPENDING_HOME}</span>
+
                                     </td>
                                     <td className="tdInfo"
                                     >
-                                        <span className="r">{convertNumberToUsd(item.TOTAL_THRESHOLD)}</span>
+                                        <span className="r">{item.TOTAL_THRESHOLD}</span>
                                     </td>
                                     <td className="tdInfo"
 
                                     >
-                                    <span className="r">{convertNumberToUsd(item.DEBT_TOTAL)}</span>
+                                        <span className="r">{item.DEBT_TOTAL}</span>
+
 
                                     </td>
-                                        <td className={styles.optionValue}>
+                                    <td className={styles.optionValue}>
 
                                         <Button
                                             onClick={() => setDetailParam(item.uid)}
