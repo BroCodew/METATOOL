@@ -143,27 +143,38 @@ useEffect(()=>{
         const sumOfBalances = totalBalance.reduce((accumulator, currentValue) => {
             return accumulator + (isNaN(currentValue) ? 0 : currentValue);
         }, 0);
+
+        const threshold = infos[i].totalThresholdAmount.map((item) =>{return convertCurrency(item.thresholdAmount === null ? 0 : item.thresholdAmount.map(item => item.threshold_amount),item.currency,item.account_currency_ratio_to_usd)})
+        const totalThreshold = threshold.map((item) => typeof item === 'number' ? item : item[0]);
+        const sumOfThresHold = totalThreshold.reduce((accumulator, currentValue) => {
+            return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+        }, 0);
+
+        // const spending = infos[i].totalSpend === null ? 0 : infos[i].totalSpend.map(item => item.totalSpend.map(item=>item.spend))
+        // console.log ("spending",spending)
+
         data.push({
-           DEBT: sumOfBalances
+           DEBT: sumOfBalances,
+            THRESHOLD: sumOfThresHold
         })
+
+
     }
-    console.log('dataaaaaaaaaaaaa',data)
+    console.log ('data', data)
     setSumOfDebt(data);
-    // setFilteredList(pre => ([...pre,pre.map((item) => item.totalBalance:data)]))
-// setFilteredList((item) => item.map(item => ({...item,item.totalBalance:data})))
-    setFilteredList((items) =>
-        items.map((item) => ({
-            ...item,
-            totalBalance: data
-        }))
-    );
+
+
 },[infos])
-
-    console.log('filteredList',filteredList)
-
-    console.log('sumOfDebt',sumOfDebt.map((item,key)=>item.DEBT[1]))
-    // const sumOfBalances = sumOfDebt.reduce((acc, balance) => acc + isNaN(balance) ? 0 : balance, 0);
-
+    console.log ('infos', infos)
+    useEffect(() => {
+        setFilteredList((pre) =>
+            pre.map((item, index) => ({
+                ...item,
+                DEBT_TOTAL: sumOfDebt[index]?.DEBT.toString() || "0",
+                TOTAL_THRESHOLD:sumOfDebt[index]?.THRESHOLD.toString() || "0",
+            }))
+        );
+    }, [sumOfDebt]);
 
 
 
@@ -378,7 +389,7 @@ useEffect(()=>{
                                     <td className="tdInfo"
 
                                     >
-                                    <span className="r"></span>
+                                    <span className="r">{convertNumberToUsd(item.DEBT_TOTAL)}</span>
 
                                     </td>
                                         <td className={styles.optionValue}>

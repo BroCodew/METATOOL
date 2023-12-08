@@ -1,14 +1,39 @@
-import React from "react";
+const orginalValue = [
+    {
+        Balance:"10",
+        Debt:'100',
+    },
+    {
+        Balance:"20",
+        Debt:'200',
+    },
+    {
+        Balance:"30",
+        Debt:'300',
+    }
+]
 
-const numberOfItems = 5;
+const value =   [
+    {
+        "DEBT": 625.600333808
+    },
+    {
+        "DEBT": 7633.182397893046
+    },
+    {
+        "DEBT": 3451.634179490012
+    }
+]
 
-// Sử dụng Array.from với hàm map để tạo mảng số thứ tự từ 1 đến numberOfItems
-const indexArray = Array.from({ length: numberOfItems }, (_, index) => index + 1);
 
-console.log(indexArray);
+const changeValue = [...orginalValue,  {
+    Balance:"40",
+    Debt:'400',
+}];
 
-{Array.from({ length: 20 }, (_, i) => i + 1).map((num, key) => (
-    <td className="tdInfo">
-            {num}
-    </td>
-))}
+const updatedOrginalValue = orginalValue.map((item, index) => ({
+    ...item,
+    Debt: value[index].DEBT.toString(), // Chuyển đổi sang chuỗi nếu cần thiết
+}));
+
+console.log(updatedOrginalValue);

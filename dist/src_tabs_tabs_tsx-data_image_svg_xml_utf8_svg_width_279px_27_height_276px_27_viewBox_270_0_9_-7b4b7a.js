@@ -1734,19 +1734,28 @@ const PopupContainer = () => {
             const sumOfBalances = totalBalance.reduce((accumulator, currentValue) => {
                 return accumulator + (isNaN(currentValue) ? 0 : currentValue);
             }, 0);
+            const threshold = infos[i].totalThresholdAmount.map((item) => { return convertCurrency(item.thresholdAmount === null ? 0 : item.thresholdAmount.map(item => item.threshold_amount), item.currency, item.account_currency_ratio_to_usd); });
+            const totalThreshold = threshold.map((item) => typeof item === 'number' ? item : item[0]);
+            const sumOfThresHold = totalThreshold.reduce((accumulator, currentValue) => {
+                return accumulator + (isNaN(currentValue) ? 0 : currentValue);
+            }, 0);
+            // const spending = infos[i].totalSpend === null ? 0 : infos[i].totalSpend.map(item => item.totalSpend.map(item=>item.spend))
+            // console.log ("spending",spending)
             data.push({
-                DEBT: sumOfBalances
+                DEBT: sumOfBalances,
+                THRESHOLD: sumOfThresHold
             });
         }
-        console.log('dataaaaaaaaaaaaa', data);
+        console.log('data', data);
         setSumOfDebt(data);
-        // setFilteredList(pre => ([...pre,pre.map((item) => item.totalBalance:data)]))
-        // setFilteredList((item) => item.map(item => ({...item,item.totalBalance:data})))
-        setFilteredList((items) => items.map((item) => (Object.assign(Object.assign({}, item), { totalBalance: data }))));
     }, [infos]);
-    console.log('filteredList', filteredList);
-    console.log('sumOfDebt', sumOfDebt.map((item, key) => item.DEBT[1]));
-    // const sumOfBalances = sumOfDebt.reduce((acc, balance) => acc + isNaN(balance) ? 0 : balance, 0);
+    console.log('infos', infos);
+    (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+        setFilteredList((pre) => pre.map((item, index) => {
+            var _a, _b;
+            return (Object.assign(Object.assign({}, item), { DEBT_TOTAL: ((_a = sumOfDebt[index]) === null || _a === void 0 ? void 0 : _a.DEBT.toString()) || "0", TOTAL_THRESHOLD: ((_b = sumOfDebt[index]) === null || _b === void 0 ? void 0 : _b.THRESHOLD.toString()) || "0" }));
+        }));
+    }, [sumOfDebt]);
     (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
         if (detailParam) {
             navigate(`/popup.html/detail/${detailParam}`, { replace: true, state: { detailParam } });
@@ -1866,7 +1875,7 @@ const PopupContainer = () => {
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
                                     react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, convertNumberToUsd(item.TOTAL_THRESHOLD))),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: "tdInfo" },
-                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" })),
+                                    react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", { className: "r" }, convertNumberToUsd(item.DEBT_TOTAL))),
                                 react__WEBPACK_IMPORTED_MODULE_0___default().createElement("td", { className: _styles_index_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].optionValue },
                                     react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_chakra_ui_react__WEBPACK_IMPORTED_MODULE_10__.Button, { onClick: () => setDetailParam(item.uid), m: 4, className: _styles_index_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].optionButton }, `Open Detail Cookie`))))))))))));
 };
