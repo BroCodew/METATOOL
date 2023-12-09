@@ -21,10 +21,6 @@ const PopupDetailAD = ({dataDetail,detailParam}) => {
         widthLimitTotalSpending : 0,
     })
     const today = new Date();
-    const day = today.getDate();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
-    const formattedDate = `${day}/${month}/${year}`;
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -58,19 +54,21 @@ const PopupDetailAD = ({dataDetail,detailParam}) => {
         }
     };
 
-    const checkAuthorBM = ( option ) => {
+    console.log('infos',infos)
+
+    const checkAuthorBM = (option, owner) => {
+
         switch (option[0]) {
             case "GENERAL_USER":
                 return "Nhà quảng cáo";
             case "REPORTS_ONLY":
                 return "Nhà phân tích";
             case "ADMIN":
-                return "Quản trị viên";
+                    return "Quản trị viên";
             default:
                 return "DRAFT";
         }
     };
-
     const compare = ( a, b, field ) => {
         if (a[field] < b[field]) {
             return -1;
@@ -219,6 +217,7 @@ const PopupDetailAD = ({dataDetail,detailParam}) => {
         });
     };
 
+
     useEffect(() => {
         if (
             typeof dataAccount === "object" &&
@@ -250,55 +249,62 @@ const PopupDetailAD = ({dataDetail,detailParam}) => {
                 } else {
                     threshold_usd = isNaN(threshold_amount / dataAccount[i].account_currency_ratio_to_usd) ? 0 : threshold_amount / dataAccount[i].account_currency_ratio_to_usd
                 }
+                const check = dataAccount[i]?.userpermissions.data.filter((item) => {
+                    const userItemId = parseInt(item?.user?.id);
+                    const detailParamNumber = parseInt(detailParam);
 
+                    return userItemId === detailParamNumber;
+                });
+
+
+
+                console.log('check',check)
                     dataInfos.push({
-                        STT : i + 1,
-                        STATUS : dataAccount[i]?.account_status,
-                        DATE_AD : formattedDate,
-                        DATE_BACKUP : "19/11/2023",
-                        IP : "222.252.20.234",
-                        PROFILE_CHROME : "Profile Chrome",
-                        COUNTRY : "Viet Nam",
-                        CITY : "Ha Noi",
-                        COOKIES : "Cookie",
-                        ID_TKQC_AD : dataAccount[i]?.account_id,
-                        NAME_TK_AD : dataAccount[i]?.name,
-                        DEBT : debtNumber,
+                        STT : i + 1, //STT
+                        STATUS : dataAccount[i]?.account_status,//Trạng thái
+
+                        NAME_TK_AD : dataAccount[i]?.name,//Tên TK
+                        DEBT : debtNumber,  //Dư nợ
                         DEBT_USD : debt_usd,
-                        THRESHOLD : threNumber,
+                        THRESHOLD : threNumber,  //Ngưỡng
                         THRESHOLD_USD : threshold_usd,
-                        LIMIT : limitNumber,
+                        LIMIT : limitNumber,  //Limit
                         LIMIT_USD : limit_usd,
-                        TOTAL_SPENDING : totalSpendNumber,
+                        TOTAL_SPENDING : totalSpendNumber, //Tổng tiêu
                         TOTAL_SPENDING_USD : total_usd,
-                        ADMIN : dataAccount[i]?.userpermissions.data.length,
-                        BILL: "PAID | Visa2292 |  | 9/18/2023 | 175,00$",
-                        PERMISSION_ACCOUNT :
-                            accountID !== null &&
-                            dataAccount[i]?.userpermissions.data.filter(
-                                ( item ) => item?.user?.id === accountID
-                            )
-                                ? "ADMIN"
-                                : "",
-                        CURRENCY : dataAccount[i]?.currency,
-                        ACCOUNT_TYPE : dataAccount[i].hasOwnProperty("owner_business")
+                        ADMIN : dataAccount[i]?.userpermissions.data.length,//Admin
+                        PERMISSION_ACCOUNT :                //Quyền tk
+                            check ? "ADMIN" : "",
+                        CURRENCY : dataAccount[i]?.currency,//Tiền tệ
+                        ACCOUNT_TYPE : dataAccount[i].hasOwnProperty("owner_business") //Loại TK
                             ? "BM"
                             : "CN",
-                        PERMISSION_BM : checkAuthorBM(
-                            dataAccount[i]?.userpermissions.data
-                                .filter(( item ) => item?.user)
-                                .map(( item, index ) => {
-                                    return item?.role.toString();
-                                })
-                        ),
-                        ID_BM : dataAccount[i]?.owner_business?.id,
-                        PAYMENT_METHOD : dataAccount[
+                        ID_BM : dataAccount[i]?.owner_business?.id,//Loại BM
+
+
+                        //Role
+                        PERMISSION_BM :
+                             checkAuthorBM(
+                                dataAccount[i]?.userpermissions.data
+                                    .filter((item) => item?.user)
+                                    .map((item, index) => {
+                                        return item?.role.toString();
+                                    }),dataAccount[i]?.owner
+                             )
+                           ,
+
+
+                        BILL: "PAID | Visa2292 |  | 9/18/2023 | 175,00$",//Bill
+                        PAYMENT_METHOD : dataAccount[                   //Thanh Toán
                             i
                             ]?.all_payment_methods?.pm_credit_card?.data.map(
                             ( item ) => item?.display_string
                         ),
-                        TIME_ZONE : `${dataAccount[i]?.timezone_offset_hours_utc}  -  ${dataAccount[i]?.timezone_name} `,
-                        CURRENCY_RATIO_USD : dataAccount[i]?.account_currency_ratio_to_usd
+                        TIME_ZONE: `${dataAccount[i]?.timezone_offset_hours_utc > 0 ? '+' : ''}${dataAccount[i]?.timezone_offset_hours_utc} | ${dataAccount[i]?.timezone_name}`, //Múi giờ
+                        ID_TKQC_AD : dataAccount[i]?.account_id,//
+                        // TIME_ZONE : `${dataAccount[i]?.timezone_offset_hours_utc > 0 '+' dataAccount[i]?.timezone_offset_hours_utc : dataAccount[i]?.timezone_offset_hours_utc}  -  ${dataAccount[i]?.timezone_name} `,
+                        CURRENCY_RATIO_USD : dataAccount[i]?.account_currency_ratio_to_usd,
+
                     });
                 }
 
@@ -594,7 +600,6 @@ const PopupDetailAD = ({dataDetail,detailParam}) => {
                                         <td className="tdInfo">{item.CURRENCY}</td>
                                         <td className="tdInfo">{item.ACCOUNT_TYPE}</td>
                                         <td className="tdInfo">{item.ACCOUNT_TYPE}</td>
-
                                         <td className="tdInfo">{item.PERMISSION_BM}</td>
                                         <td className="tdInfo">{item.ID_BM}</td>
                                         <td className="tdInfo" style={{color:"blue"}} onClick={handleGetBill}>Link</td>

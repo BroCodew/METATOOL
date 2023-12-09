@@ -2278,10 +2278,6 @@ const PopupDetailAD = ({ dataDetail, detailParam }) => {
         widthLimitTotalSpending: 0,
     });
     const today = new Date();
-    const day = today.getDate();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
-    const formattedDate = `${day}/${month}/${year}`;
     const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_3__.useNavigate)();
     (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
         setDataAccount(dataDetail.adsAccounts);
@@ -2302,7 +2298,8 @@ const PopupDetailAD = ({ dataDetail, detailParam }) => {
                 return "DRAFT";
         }
     };
-    const checkAuthorBM = (option) => {
+    console.log('infos', infos);
+    const checkAuthorBM = (option, owner) => {
         switch (option[0]) {
             case "GENERAL_USER":
                 return "Nhà quảng cáo";
@@ -2380,7 +2377,7 @@ const PopupDetailAD = ({ dataDetail, detailParam }) => {
         });
     };
     (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
         if (typeof dataAccount === "object" &&
             dataAccount.length > 0) {
             let dataInfos = [];
@@ -2411,17 +2408,16 @@ const PopupDetailAD = ({ dataDetail, detailParam }) => {
                 else {
                     threshold_usd = isNaN(threshold_amount / dataAccount[i].account_currency_ratio_to_usd) ? 0 : threshold_amount / dataAccount[i].account_currency_ratio_to_usd;
                 }
+                const check = (_e = dataAccount[i]) === null || _e === void 0 ? void 0 : _e.userpermissions.data.filter((item) => {
+                    var _a;
+                    const userItemId = parseInt((_a = item === null || item === void 0 ? void 0 : item.user) === null || _a === void 0 ? void 0 : _a.id);
+                    const detailParamNumber = parseInt(detailParam);
+                    return userItemId === detailParamNumber;
+                });
+                console.log('check', check);
                 dataInfos.push({
                     STT: i + 1,
-                    STATUS: (_e = dataAccount[i]) === null || _e === void 0 ? void 0 : _e.account_status,
-                    DATE_AD: formattedDate,
-                    DATE_BACKUP: "19/11/2023",
-                    IP: "222.252.20.234",
-                    PROFILE_CHROME: "Profile Chrome",
-                    COUNTRY: "Viet Nam",
-                    CITY: "Ha Noi",
-                    COOKIES: "Cookie",
-                    ID_TKQC_AD: (_f = dataAccount[i]) === null || _f === void 0 ? void 0 : _f.account_id,
+                    STATUS: (_f = dataAccount[i]) === null || _f === void 0 ? void 0 : _f.account_status,
                     NAME_TK_AD: (_g = dataAccount[i]) === null || _g === void 0 ? void 0 : _g.name,
                     DEBT: debtNumber,
                     DEBT_USD: debt_usd,
@@ -2432,22 +2428,24 @@ const PopupDetailAD = ({ dataDetail, detailParam }) => {
                     TOTAL_SPENDING: totalSpendNumber,
                     TOTAL_SPENDING_USD: total_usd,
                     ADMIN: (_h = dataAccount[i]) === null || _h === void 0 ? void 0 : _h.userpermissions.data.length,
-                    BILL: "PAID | Visa2292 |  | 9/18/2023 | 175,00$",
-                    PERMISSION_ACCOUNT: accountID !== null &&
-                        ((_j = dataAccount[i]) === null || _j === void 0 ? void 0 : _j.userpermissions.data.filter((item) => { var _a; return ((_a = item === null || item === void 0 ? void 0 : item.user) === null || _a === void 0 ? void 0 : _a.id) === accountID; }))
-                        ? "ADMIN"
-                        : "",
-                    CURRENCY: (_k = dataAccount[i]) === null || _k === void 0 ? void 0 : _k.currency,
-                    ACCOUNT_TYPE: dataAccount[i].hasOwnProperty("owner_business")
+                    PERMISSION_ACCOUNT: //Quyền tk
+                    check ? "ADMIN" : "",
+                    CURRENCY: (_j = dataAccount[i]) === null || _j === void 0 ? void 0 : _j.currency,
+                    ACCOUNT_TYPE: dataAccount[i].hasOwnProperty("owner_business") //Loại TK
                         ? "BM"
                         : "CN",
-                    PERMISSION_BM: checkAuthorBM((_l = dataAccount[i]) === null || _l === void 0 ? void 0 : _l.userpermissions.data.filter((item) => item === null || item === void 0 ? void 0 : item.user).map((item, index) => {
+                    ID_BM: (_l = (_k = dataAccount[i]) === null || _k === void 0 ? void 0 : _k.owner_business) === null || _l === void 0 ? void 0 : _l.id,
+                    //Role
+                    PERMISSION_BM: checkAuthorBM((_m = dataAccount[i]) === null || _m === void 0 ? void 0 : _m.userpermissions.data.filter((item) => item === null || item === void 0 ? void 0 : item.user).map((item, index) => {
                         return item === null || item === void 0 ? void 0 : item.role.toString();
-                    })),
-                    ID_BM: (_o = (_m = dataAccount[i]) === null || _m === void 0 ? void 0 : _m.owner_business) === null || _o === void 0 ? void 0 : _o.id,
-                    PAYMENT_METHOD: (_r = (_q = (_p = dataAccount[i]) === null || _p === void 0 ? void 0 : _p.all_payment_methods) === null || _q === void 0 ? void 0 : _q.pm_credit_card) === null || _r === void 0 ? void 0 : _r.data.map((item) => item === null || item === void 0 ? void 0 : item.display_string),
-                    TIME_ZONE: `${(_s = dataAccount[i]) === null || _s === void 0 ? void 0 : _s.timezone_offset_hours_utc}  -  ${(_t = dataAccount[i]) === null || _t === void 0 ? void 0 : _t.timezone_name} `,
-                    CURRENCY_RATIO_USD: (_u = dataAccount[i]) === null || _u === void 0 ? void 0 : _u.account_currency_ratio_to_usd
+                    }), (_o = dataAccount[i]) === null || _o === void 0 ? void 0 : _o.owner),
+                    BILL: "PAID | Visa2292 |  | 9/18/2023 | 175,00$",
+                    PAYMENT_METHOD: (_r = (_q = (_p = dataAccount[ //Thanh Toán
+                    i]) === null || _p === void 0 ? void 0 : _p.all_payment_methods) === null || _q === void 0 ? void 0 : _q.pm_credit_card) === null || _r === void 0 ? void 0 : _r.data.map((item) => item === null || item === void 0 ? void 0 : item.display_string),
+                    TIME_ZONE: `${((_s = dataAccount[i]) === null || _s === void 0 ? void 0 : _s.timezone_offset_hours_utc) > 0 ? '+' : ''}${(_t = dataAccount[i]) === null || _t === void 0 ? void 0 : _t.timezone_offset_hours_utc} | ${(_u = dataAccount[i]) === null || _u === void 0 ? void 0 : _u.timezone_name}`,
+                    ID_TKQC_AD: (_v = dataAccount[i]) === null || _v === void 0 ? void 0 : _v.account_id,
+                    // TIME_ZONE : `${dataAccount[i]?.timezone_offset_hours_utc > 0 '+' dataAccount[i]?.timezone_offset_hours_utc : dataAccount[i]?.timezone_offset_hours_utc}  -  ${dataAccount[i]?.timezone_name} `,
+                    CURRENCY_RATIO_USD: (_w = dataAccount[i]) === null || _w === void 0 ? void 0 : _w.account_currency_ratio_to_usd,
                 });
             }
             setInfos(dataInfos);
